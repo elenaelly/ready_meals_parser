@@ -1,40 +1,43 @@
 import requests
+import string
 from bs4 import BeautifulSoup
+import csv
 
-# Send a GET request to the website
-url = "https://www.mealty.ru/"
-response = requests.get(url)
+url = 'https://mealty.ru/'
+html = requests.get(url)
+soup = BeautifulSoup(html.text, 'html.parser')
 
-# Parse the HTML content using BeautifulSoup
-soup = BeautifulSoup(response.content, "html.parser")
+#meals = soup.find_all("div", class_="popup meal-popup")
 
-# Find all the meal items on the page
-meal_items = soup.find_all(class_="meal-popup")
+#for meal in meals:
+meal_names = soup.find_all("div", class_="meal-card__name")
 
-# Iterate through each meal item
-def new_func(meal_item):
-    meal_name = meal_item.find(class_="meal-popupname").text.strip()
-    return meal_name
+meal_notes = soup.find_all("div", class_="meal-card__name-note")
 
-for meal_item in meal_items:
-    # Get the meal name
-    meal_name = new_func(meal_item)
+meal_prices = soup.find_all("span", class_="basket__footer-total-count green")
 
-    # Get the portion size
-    portion = meal_item.find(
-        class_="meal-popupproperties-header-value meal-popupweight text-right green").text.strip()
+meal_calories = soup.find_all("div", class_="meal-card__calories__portion")
 
-    # Get the portion calories
-    portion_calories = meal_item.find(
-        class_="meal-popupproperties-header-value meal-popupcalories__portion text-right green").text.strip()
+meal_sizes = soup.find_all("div", class_="meal-card__weight")
 
-    # Get the meal price
-    meal_price = meal_item.find(
-        class_="meal-popupproperties-header-value meal-popupprice text-right green").text.strip()
+for meal_name, meal_note, meal_price, meal_calorie, meal_size in zip(meal_names, meal_notes, meal_prices, meal_calories, meal_sizes):
+    name = meal_name.get_text()
+    note = meal_note.get_text()
+    price = meal_price.get_text()
+    calories = meal_calorie.get_text()
+    size = meal_size.get_text()
+    
+    print(f'{name} {note}. Цена: {price} руб. Калории: {calories} на {size} гр.')
 
-    # Print the meal details
-    print("Meal Name:", meal_name)
-    print("Portion:", portion)
-    print("Portion Calories:", portion_calories)
-    print("Meal Price:", meal_price)
-    print()
+    data_rows = [
+        [name, note, price, calories, size]
+    ]
+
+    #generate CSV from data
+    #file = open('mealty_meals.csv', 'w')
+    def write_csv(data_rows):
+        with open('mealty_meals.csv (fde7be9)', 'w') as file:
+            mealty_writer = csv.writer(file, delimiter=',')
+            header = ['name', 'note', 'price', 'calories', 'size']
+            mealty_writer.writerow(header)
+            mealty_writer.writerows(data_rows)
